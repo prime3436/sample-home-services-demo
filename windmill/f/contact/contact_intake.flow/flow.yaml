@@ -1,0 +1,129 @@
+summary: Synchronous Contact Intake Flow
+description: Validates incoming inquiry payload from Supabase Edge Function and writes idempotently to public.contact_submissions
+value:
+  modules:
+    - id: persist_contact_submission
+      summary: Idempotent write to Supabase PostgreSQL contact_submissions
+      value:
+        type: rawscript
+        language: deno
+        content: |-
+          const UUID_REGEX =
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+          const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+          export async function main(
+            request_id: string,
+            name: string,
+            email: string,
+            message: string,
+            supabase_url: string,
+            supabase_service_role_key: string
+          ): Promise<{ stored: boolean; request_id: string }> {
+            const cleanId = (request_id ?? "").trim();
+            const cleanName = (name ?? "").trim();
+            const cleanEmail = (email ?? "").trim();
+            const cleanMessage = (message ?? "").trim();
+
+            if (!UUID_REGEX.test(cleanId)) {
+              throw new Error("Invalid request_id UUID format.");
+            }
+            if (cleanName.length < 2 || cleanName.length > 80) {
+              throw new Error("Invalid name length.");
+            }
+            if (cleanEmail.length === 0 || cleanEmail.length > 254 || !EMAIL_REGEX.test(cleanEmail)) {
+              throw new Error("Invalid email format.");
+            }
+            if (cleanMessage.length < 10 || cleanMessage.length > 1000) {
+              throw new Error("Invalid message length.");
+            }
+
+            const baseUrl = (supabase_url ?? "").replace(/\/+$/, "");
+            if (!baseUrl || !supabase_service_role_key) {
+              throw new Error("Missing server-side Supabase credentials.");
+            }
+
+            const endpoint = `${baseUrl}/rest/v1/contact_submissions?on_conflict=request_id`;
+            const insertResponse = await fetch(endpoint, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "apikey": supabase_service_role_key,
+                "Authorization": `Bearer ${supabase_service_role_key}`,
+                "Prefer": "resolution=ignore-duplicates,return=representation",
+              },
+              body: JSON.stringify({
+                request_id: cleanId,
+                name: cleanName,
+                email: cleanEmail,
+                message: cleanMessage,
+              }),
+            });
+
+            if (!insertResponse.ok) {
+              throw new Error(`Supabase insert failed: ${insertResponse.status}`);
+            }
+
+            const insertedRows = (await insertResponse.json()) as Array<{ request_id: string }>;
+            if (Array.isArray(insertedRows) && insertedRows.length === 1) {
+              return { stored: true, request_id: insertedRows[0].request_id };
+            }
+
+            const lookupUrl = `${baseUrl}/rest/v1/contact_submissions?request_id=eq.${encodeURIComponent(cleanId)}&select=request_id`;
+            const lookupResponse = await fetch(lookupUrl, {
+              method: "GET",
+              headers: {
+                "Accept": "application/json",
+                "apikey": supabase_service_role_key,
+                "Authorization": `Bearer ${supabase_service_role_key}`,
+              },
+            });
+
+            if (!lookupResponse.ok) {
+              throw new Error(`Supabase lookup failed: ${lookupResponse.status}`);
+            }
+
+            const existingRows = (await lookupResponse.json()) as Array<{ request_id: string }>;
+            if (!Array.isArray(existingRows) || existingRows.length !== 1) {
+              throw new Error("Record confirmation failed.");
+            }
+
+            return { stored: true, request_id: existingRows[0].request_id };
+          }
+        input_transforms:
+          request_id:
+            type: javascript
+            expr: flow_input.request_id
+          name:
+            type: javascript
+            expr: flow_input.name
+          email:
+            type: javascript
+            expr: flow_input.email
+          message:
+            type: javascript
+            expr: flow_input.message
+          supabase_url:
+            type: javascript
+            expr: variable('f/contact/SUPABASE_URL')
+          supabase_service_role_key:
+            type: javascript
+            expr: variable('f/contact/SUPABASE_SERVICE_ROLE_KEY')
+  same_worker: true
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  properties:
+    request_id:
+      type: string
+    name:
+      type: string
+    email:
+      type: string
+    message:
+      type: string
+  required:
+    - request_id
+    - name
+    - email
+    - message
