@@ -1,4 +1,4 @@
-summary: Synchronous Contact Intake Flow
+summary: contact_intake
 description: Validates incoming inquiry payload from Supabase Edge Function and writes idempotently to public.contact_submissions
 value:
   modules:
@@ -8,6 +8,8 @@ value:
         type: rawscript
         language: deno
         content: |-
+          import * as wmill from "npm:windmill-client@1";
+
           const UUID_REGEX =
             /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
           const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -16,9 +18,7 @@ value:
             request_id: string,
             name: string,
             email: string,
-            message: string,
-            supabase_url: string,
-            supabase_service_role_key: string
+            message: string
           ): Promise<{ stored: boolean; request_id: string }> {
             const cleanId = (request_id ?? "").trim();
             const cleanName = (name ?? "").trim();
@@ -38,18 +38,39 @@ value:
               throw new Error("Invalid message length.");
             }
 
-            const baseUrl = (supabase_url ?? "").replace(/\/+$/, "");
-            if (!baseUrl || !supabase_service_role_key) {
-              throw new Error("Missing server-side Supabase credentials.");
+            const baseUrl = "https://zuhjpdhxjhysrzyjtbhv.supabase.co";
+            let serviceKey = "";
+            for (const p of [
+              "u/patibandla/SUPABASE_SERVICE_ROLE_KEY",
+              "u/prime3437/SUPABASE_SERVICE_ROLE_KEY",
+              "f/contact/SUPABASE_SERVICE_ROLE_KEY",
+            ]) {
+              try {
+                const val = await wmill.getVariable(p);
+                if (val) {
+                  serviceKey = val.trim();
+                  break;
+                }
+              } catch {}
+            }
+
+            if (!serviceKey) {
+              throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY variable in Windmill.");
+            }
+
+            const authHeaders: Record<string, string> = {
+              "apikey": serviceKey,
+            };
+            if (serviceKey.startsWith("eyJ")) {
+              authHeaders["Authorization"] = `Bearer ${serviceKey}`;
             }
 
             const endpoint = `${baseUrl}/rest/v1/contact_submissions?on_conflict=request_id`;
             const insertResponse = await fetch(endpoint, {
               method: "POST",
               headers: {
+                ...authHeaders,
                 "Content-Type": "application/json",
-                "apikey": supabase_service_role_key,
-                "Authorization": `Bearer ${supabase_service_role_key}`,
                 "Prefer": "resolution=ignore-duplicates,return=representation",
               },
               body: JSON.stringify({
@@ -61,7 +82,8 @@ value:
             });
 
             if (!insertResponse.ok) {
-              throw new Error(`Supabase insert failed: ${insertResponse.status}`);
+              const errText = await insertResponse.text();
+              throw new Error(`Supabase insert failed (${insertResponse.status}): ${errText}`);
             }
 
             const insertedRows = (await insertResponse.json()) as Array<{ request_id: string }>;
@@ -73,9 +95,8 @@ value:
             const lookupResponse = await fetch(lookupUrl, {
               method: "GET",
               headers: {
+                ...authHeaders,
                 "Accept": "application/json",
-                "apikey": supabase_service_role_key,
-                "Authorization": `Bearer ${supabase_service_role_key}`,
               },
             });
 
@@ -103,12 +124,6 @@ value:
           message:
             type: javascript
             expr: flow_input.message
-          supabase_url:
-            type: javascript
-            expr: variable('f/contact/SUPABASE_URL')
-          supabase_service_role_key:
-            type: javascript
-            expr: variable('f/contact/SUPABASE_SERVICE_ROLE_KEY')
   same_worker: true
 schema:
   $schema: https://json-schema.org/draft/2020-12/schema

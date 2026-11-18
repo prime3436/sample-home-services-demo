@@ -22,7 +22,7 @@ Follow these 9 steps to open the public site, submit a live test inquiry, and ve
    Verify that the form transitions to **Inquiry Received** and displays the exact `Recorded Request ID` matching the UUID from Step 2.
 
 6. **Verify the Windmill execution run**
-   Open the Windmill workspace dashboard (`https://app.windmill.dev`), navigate to **Runs**, filter by path `f/contact/contact_intake`, and open the latest run. Confirm the output payload is:
+   Open the Windmill workspace dashboard (`https://app.windmill.dev`, workspace `prime3437`), navigate to **Runs**, filter by path `u/patibandla/contact_intake`, and open the latest run. Confirm the output payload is:
    ```json
    {
      "stored": true,
@@ -31,15 +31,13 @@ Follow these 9 steps to open the public site, submit a live test inquiry, and ve
    ```
 
 7. **Verify the stored row in Supabase PostgreSQL**
-   Open the Supabase Project Dashboard (`https://supabase.com/dashboard`), go to **Table Editor → `contact_submissions`** (or run `SELECT request_id, name, email, message, created_at FROM public.contact_submissions WHERE request_id = '<your-request-id>';` in **SQL Editor**), and confirm that exactly one row exists with matching fields and timestamp.
+   Open the Supabase Project Dashboard (`https://supabase.com/dashboard/project/zuhjpdhxjhysrzyjtbhv/editor`), open **`contact_submissions`** (or run `SELECT request_id, name, email, message, created_at FROM public.contact_submissions WHERE request_id = '<your-request-id>';` in **SQL Editor**), and confirm that exactly one row exists with matching fields and timestamp.
 
 8. **Verify RLS protection against anonymous access (T5 check)**
-   Run the following command in a terminal (replacing `<project-ref>` and `<anon-key>` from the handover credentials sheet) and verify that anonymous direct table read is denied (returns empty or permission denied `401/403`):
+   Run the following command in a terminal and verify that unauthenticated/anonymous direct table read is denied:
    ```bash
-   curl -i "https://<project-ref>.supabase.co/rest/v1/contact_submissions?select=*" \
-     -H "apikey: <supabase-anon-key>" \
-     -H "Authorization: Bearer <supabase-anon-key>"
+   curl -i "https://zuhjpdhxjhysrzyjtbhv.supabase.co/rest/v1/contact_submissions?select=*"
    ```
 
 9. **Verify duplicate request safety (T7 check)**
-   Re-send the same `request_id` to the Edge Function endpoint (`POST https://<project-ref>.supabase.co/functions/v1/contact-submit`) and confirm the response is `{"request_id":"<your-request-id>","status":"received"}` while `SELECT count(*) FROM public.contact_submissions WHERE request_id = '<your-request-id>';` in Supabase still equals `1`.
+   Re-send the same `request_id` to `POST https://zuhjpdhxjhysrzyjtbhv.supabase.co/functions/v1/contact-submit` and confirm the response is `{"request_id":"<your-request-id>","status":"received"}` while `SELECT count(*) FROM public.contact_submissions WHERE request_id = '<your-request-id>';` in Supabase still equals `1`.
