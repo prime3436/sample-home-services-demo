@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Wrench,
   PackageCheck,
@@ -14,6 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ContactForm } from "@/components/ContactForm";
+import { cn } from "@/lib/utils";
 
 const SERVICES = [
   {
@@ -52,6 +54,8 @@ const SERVICES = [
 ] as const;
 
 export function App() {
+  const [selectedService, setSelectedService] = useState<string | null>(null);
+
   return (
     <div className="min-h-screen flex flex-col bg-[#faf8f5] text-slate-900">
       <div
@@ -152,13 +156,38 @@ export function App() {
           <div className="grid gap-6 md:grid-cols-3">
             {SERVICES.map((service) => {
               const Icon = service.icon;
+              const isSelected = selectedService === service.title;
               return (
                 <Card
                   key={service.title}
-                  className="flex flex-col border-slate-200 bg-white"
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={isSelected}
+                  onClick={() =>
+                    setSelectedService((prev) =>
+                      prev === service.title ? null : service.title
+                    )
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedService((prev) =>
+                        prev === service.title ? null : service.title
+                      );
+                    }
+                  }}
+                  className={cn(
+                    "flex cursor-pointer select-none flex-col border-slate-200 bg-white transition-all duration-150 hover:-translate-y-0.5 hover:border-slate-400 hover:shadow-md active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2",
+                    isSelected && "border-slate-900 ring-1 ring-slate-900 shadow-md"
+                  )}
                 >
                   <CardHeader>
-                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-800">
+                    <div
+                      className={cn(
+                        "mb-3 flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-800 transition-colors",
+                        isSelected && "border-slate-900 bg-slate-900 text-white"
+                      )}
+                    >
                       <Icon className="h-5 w-5" />
                     </div>
                     <CardTitle className="text-lg text-slate-900">
