@@ -9,7 +9,7 @@ describe("Sample Home Services — Demo", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders title, demonstration notice, three service cards, and Contact Us button", () => {
+  it("renders title, demonstration notice, three service cards, Weekend Appointments callout, and Request a Callback button", () => {
     render(<App />);
 
     expect(
@@ -29,7 +29,14 @@ describe("Sample Home Services — Demo", () => {
     expect(screen.getByText("Home Maintenance")).toBeInTheDocument();
 
     expect(
-      screen.getByRole("button", { name: "Contact Us" })
+      screen.getByTestId("weekend-appointments-callout")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Weekend Appointments" })
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", { name: "Request a Callback" })
     ).toBeInTheDocument();
   });
 
@@ -38,7 +45,9 @@ describe("Sample Home Services — Demo", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Contact Us" }));
+    await user.click(
+      screen.getByRole("button", { name: "Request a Callback" })
+    );
 
     expect(await screen.findByText("Name is required.")).toBeInTheDocument();
     expect(
@@ -50,7 +59,9 @@ describe("Sample Home Services — Demo", () => {
     await user.type(screen.getByLabelText("Name"), "A");
     await user.type(screen.getByLabelText("Email"), "invalid-email");
     await user.type(screen.getByLabelText("Message"), "Too short");
-    await user.click(screen.getByRole("button", { name: "Contact Us" }));
+    await user.click(
+      screen.getByRole("button", { name: "Request a Callback" })
+    );
 
     expect(
       await screen.findByText("Name must be between 2 and 80 characters.")
@@ -123,19 +134,25 @@ describe("Sample Home Services — Demo", () => {
       "Need two bookshelves assembled and anchored to the study wall."
     );
 
-    await user.click(screen.getByRole("button", { name: "Contact Us" }));
+    await user.click(
+      screen.getByRole("button", { name: "Request a Callback" })
+    );
 
     expect(
       await screen.findByTestId("submission-error")
     ).toHaveTextContent("Windmill flow temporarily unreachable.");
 
-    await user.click(screen.getByRole("button", { name: "Contact Us" }));
+    await user.click(
+      screen.getByRole("button", { name: "Request a Callback" })
+    );
 
     expect(
       await screen.findByTestId("submission-error")
     ).toHaveTextContent("Submission could not be stored right now.");
 
-    await user.click(screen.getByRole("button", { name: "Contact Us" }));
+    await user.click(
+      screen.getByRole("button", { name: "Request a Callback" })
+    );
 
     await waitFor(() => {
       expect(screen.getByText("Inquiry Received")).toBeInTheDocument();

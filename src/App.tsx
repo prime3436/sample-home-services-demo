@@ -1,4 +1,10 @@
-import { Wrench, PackageCheck, ShieldCheck, Info } from "lucide-react";
+import {
+  Wrench,
+  PackageCheck,
+  ShieldCheck,
+  Info,
+  CalendarClock,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -13,7 +19,8 @@ const SERVICES = [
   {
     title: "Small Repairs",
     icon: Wrench,
-    summary: "Fixture replacements, drywall patching, door alignment, and hardware adjustments.",
+    summary:
+      "Fixture replacements, drywall patching, door alignment, and hardware adjustments.",
     details: [
       "Cabinet hinges, locks, and interior door latches",
       "Drywall anchors, patching, and trim touch-ups",
@@ -23,7 +30,8 @@ const SERVICES = [
   {
     title: "Furniture Assembly",
     icon: PackageCheck,
-    summary: "Flat-pack residential and home-office furniture assembly with anchoring where required.",
+    summary:
+      "Flat-pack residential and home-office furniture assembly with anchoring where required.",
     details: [
       "Desks, shelving units, wardrobes, and bed frames",
       "Leveling, hardware torque check, and wall anchoring",
@@ -33,7 +41,8 @@ const SERVICES = [
   {
     title: "Home Maintenance",
     icon: ShieldCheck,
-    summary: "Routine seasonal upkeep checks to keep residential fixtures and fittings in working order.",
+    summary:
+      "Routine seasonal upkeep checks to keep residential fixtures and fittings in working order.",
     details: [
       "Filter replacements, smoke detector battery checks",
       "Grout sealing, exterior door sweep installation",
@@ -89,7 +98,10 @@ export function App() {
         <section className="border-b border-slate-200 bg-white">
           <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
             <div className="max-w-3xl space-y-5">
-              <Badge variant="outline" className="border-slate-300 text-slate-700">
+              <Badge
+                variant="outline"
+                className="border-slate-300 text-slate-700"
+              >
                 Residential Repair & Upkeep Demo
               </Badge>
               <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-5xl">
@@ -119,7 +131,10 @@ export function App() {
           </div>
         </section>
 
-        <section id="services" className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
+        <section
+          id="services"
+          className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16"
+        >
           <div className="mb-8 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
             <div>
               <h2 className="text-2xl font-bold tracking-tight text-slate-900">
@@ -185,7 +200,33 @@ export function App() {
               </p>
             </div>
 
-            <ContactForm submitLabel="Contact Us" />
+            <div
+              data-testid="weekend-appointments-callout"
+              className="mb-6 rounded-lg border border-slate-300 bg-white p-5 shadow-sm"
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-slate-900 text-white">
+                    <CalendarClock className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-slate-900">
+                      Weekend Appointments
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Saturday and Sunday demonstration slots (8:00 AM – 4:00
+                      PM) can be requested using the inquiry form below. Mention
+                      your preferred weekend window in the message field.
+                    </p>
+                  </div>
+                </div>
+                <Badge variant="secondary" className="w-fit shrink-0">
+                  Sat & Sun Windows
+                </Badge>
+              </div>
+            </div>
+
+            <ContactForm submitLabel="Request a Callback" />
           </div>
         </section>
       </main>
